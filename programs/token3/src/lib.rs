@@ -7,6 +7,8 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 // Replace for Localnet 8fFnX9WSPjJEADtG5jQvQQptzfFmmjd6hrW7HjuUT8ur
 pub const USDC_MINT_ADDRESS: &str = "8fFnX9WSPjJEADtG5jQvQQptzfFmmjd6hrW7HjuUT8ur";
 
+pub const AUTHORITY: &str = "DfLZV18rD7wCQwjYvhTFwuvLh49WSbXFeJFPQb5czifH";
+
 
 #[program]
 pub mod token3 {
@@ -211,6 +213,43 @@ pub mod token3 {
         );
         token::transfer(cpi_ctx, usdc_amount)?;
         
+        
+        Ok(())
+    }
+
+   pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
+        
+        let token_data = ctx.accounts.token_data.key();
+        let mint = ctx.accounts.mint.key();
+        let seeds = &["EARNED".as_bytes(), token_data.as_ref(), mint.as_ref(), &[ctx.accounts.token_data.earned_bump]];
+        let signer = [&seeds[..]];
+
+        // transfer USDC earned
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.earned_usdc_account.to_account_info(),
+                authority: ctx.accounts.earned_usdc_account.to_account_info(),
+                to: ctx.accounts.withdraw_usdc_account.to_account_info(),
+            },
+            &signer,
+        );
+        
+        let amount = ctx.accounts.earned_usdc_account.amount;
+        token::transfer(cpi_ctx, amount)?;
+        
+        
+        Ok(())
+    }
+
+    //TODO: does each field need own function to update? can inputs be conditional?
+    pub fn update_token_data(ctx: Context<UpdateTokenData>, name: String, discount: u64, reward: u64) -> Result<()> {
+        
+        let token_data = &mut ctx.accounts.token_data;
+        
+        token_data.name = name;
+        token_data.discount = discount;
+        token_data.reward = reward;
         
         Ok(())
     }
@@ -439,6 +478,55 @@ pub struct PartialRedeem<'info> {
     pub token_program: Program<'info, Token>,
 
 }
+
+#[derive(Accounts)]
+pub struct Withdraw<'info> {
+    #[account()]
+    pub token_data: Box<Account<'info, TokenData>>,
+
+    // USDC to here
+    #[account(
+        mut,
+        constraint = earned_usdc_account.mint == mint.key(),
+        seeds = ["EARNED".as_bytes().as_ref(), token_data.key().as_ref(), mint.key().as_ref() ],
+        bump = token_data.earned_bump,
+    )]
+    pub earned_usdc_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(mut,
+        constraint =withdraw_usdc_account.mint == mint.key(),
+    )]
+    pub withdraw_usdc_account: Box<Account<'info, TokenAccount>>,
+
+    // "USDC" Mint
+    #[account(
+        address = USDC_MINT_ADDRESS.parse::<Pubkey>().unwrap(),
+    )]
+    pub mint: Account<'info, Mint>,
+
+    // SPL Token Program
+    pub token_program: Program<'info, Token>,
+
+    // Require Authority Signiture to Withdraw
+    #[account(
+        address = AUTHORITY.parse::<Pubkey>().unwrap(),
+    )]
+    pub authority: Signer<'info>,
+
+}
+
+#[derive(Accounts)]
+pub struct UpdateTokenData<'info> {
+    #[account(mut)]
+    pub token_data: Box<Account<'info, TokenData>>,
+
+    // Require Authority Signiture to Withdraw
+    #[account(
+        constraint = token_data.user == user.key()
+    )]
+    pub user: Signer<'info>,
+}
+
 
 #[account]
 pub struct TokenData {

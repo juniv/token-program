@@ -448,6 +448,81 @@ describe("token3", () => {
     console.log("userToken Balance:", balance4);
     console.log("userUSDC Balance:", balance5);
   });
+
+  it("Withdraw", async () => {
+    const usdcTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      await randomPayer(),
+      usdcMint,
+      provider.wallet.publicKey
+    );
+
+    const token = await program.account.tokenData.fetch(newAccount.publicKey);
+
+    const balance1 = (await connection.getTokenAccountBalance(token.earned))
+      .value.amount;
+
+    const balance6 = (
+      await connection.getTokenAccountBalance(usdcTokenAccount.address)
+    ).value.amount;
+
+    console.log("before earned Balance:", balance1);
+    console.log("before userUSDC Balance:", balance6);
+
+    try {
+      await program.rpc.withdraw({
+        accounts: {
+          tokenData: newAccount.publicKey,
+          earnedUsdcAccount: token.earned,
+          withdrawUsdcAccount: usdcTokenAccount.address,
+          mint: usdcMint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          authority: provider.wallet.publicKey,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+
+    const balance2 = (await connection.getTokenAccountBalance(token.earned))
+      .value.amount;
+
+    const balance5 = (
+      await connection.getTokenAccountBalance(usdcTokenAccount.address)
+    ).value.amount;
+
+    // console.log("Token Supply Balance:", balance2);
+    console.log("after earned Balance:", balance2);
+    console.log("after userUSDC Balance:", balance5);
+  });
+
+  it("Update Token Data", async () => {
+    const before = await program.account.tokenData.fetch(newAccount.publicKey);
+    console.log(before.name);
+    console.log(before.discount.toNumber());
+    console.log(before.reward.toNumber());
+
+    try {
+      await program.rpc.updateTokenData(
+        "update",
+        new anchor.BN(2),
+        new anchor.BN(2),
+        {
+          accounts: {
+            tokenData: newAccount.publicKey,
+            user: userWallet.publicKey,
+          },
+        }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+
+    const after = await program.account.tokenData.fetch(newAccount.publicKey);
+    console.log(after.name);
+    console.log(after.discount.toNumber());
+    console.log(after.reward.toNumber());
+  });
 });
 
 // @ts-ignore
