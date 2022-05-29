@@ -57,6 +57,7 @@ pub mod token3 {
     pub fn mint_token(ctx: Context<MintToken>, amount: u64) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
 
+        // mint tokens to user
         let seeds = &["MINT".as_bytes(), token_data.as_ref(), &[ctx.accounts.token_data.mint_bump]];
         let signer = [&seeds[..]];
 
@@ -106,8 +107,14 @@ pub mod token3 {
     }
 
 
-    pub fn redeem(ctx: Context<Redeem>, amount: u64,) -> Result<()> {
-
+    pub fn redeem_one_token(ctx: Context<Redeem>, amount: u64,) -> Result<()> {
+        let token_data = ctx.accounts.token_data.key();
+        let reward_amount = amount * ctx.accounts.token_data.reward / 100;
+        let fee_amount = ctx.accounts.token_data.transaction_fee; 
+        let usdc_value = (amount - reward_amount) * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
+        let earned_amount = usdc_value - fee_amount;
+        
+        // burn tokens        
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Burn {
@@ -118,12 +125,28 @@ pub mod token3 {
         );
         token::burn(cpi_ctx, amount)?;
         
-        let token_data = ctx.accounts.token_data.key();
+        // mint reward token to user
+        let seeds = &["MINT".as_bytes(), token_data.as_ref(), &[ctx.accounts.token_data.mint_bump]];
+        let signer = [&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::MintTo {
+                mint: ctx.accounts.token_mint.to_account_info(),
+                to: ctx.accounts.user_token.to_account_info(),
+                authority: ctx.accounts.token_mint.to_account_info(),
+            },
+            &signer,
+        );
+
+        token::mint_to(cpi_ctx, reward_amount)?;
+        
+        // mint is usdc mint
         let mint = ctx.accounts.mint.key();
         let seeds = &["RESERVE".as_bytes(), token_data.as_ref(), mint.as_ref(), &[ctx.accounts.token_data.reserve_bump]];
         let signer = [&seeds[..]];
 
-        // transfer USDC fee.
+        // transfer USDC fee from reserve to treasury
         let cpi_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -134,7 +157,6 @@ pub mod token3 {
             &signer,
         );
 
-        let fee_amount = ctx.accounts.token_data.transaction_fee; 
         token::transfer(cpi_ctx, fee_amount)?;
 
         // transfer USDC earned
@@ -148,15 +170,21 @@ pub mod token3 {
             &signer,
         );
         
-        let usdc_value = amount * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
-        let earned_amount = usdc_value - fee_amount;
         token::transfer(cpi_ctx, earned_amount)?;
         
         
         Ok(())
     }
 
-    pub fn partial_redeem(ctx: Context<PartialRedeem>, token_amount: u64, usdc_amount:u64) -> Result<()> {
+    pub fn redeem_two_token(ctx: Context<PartialRedeem>, token_amount: u64, usdc_amount:u64) -> Result<()> {
+        let token_data = ctx.accounts.token_data.key();
+        let token_reward_amount = token_amount * ctx.accounts.token_data.reward / 100;
+        let usdc_reward_amount = usdc_amount * ctx.accounts.token_data.reward / 100;
+        let total_reward_amount = token_reward_amount + usdc_reward_amount;
+        let usdc_value = (token_amount - token_reward_amount) * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
+        let fee_amount = ctx.accounts.token_data.transaction_fee; 
+        let earned_amount = usdc_value - fee_amount;
+        let usdc_earned_amount = usdc_amount - usdc_reward_amount; 
 
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -168,7 +196,6 @@ pub mod token3 {
         );
         token::burn(cpi_ctx, token_amount)?;
         
-        let token_data = ctx.accounts.token_data.key();
         let mint = ctx.accounts.mint.key();
         let seeds = &["RESERVE".as_bytes(), token_data.as_ref(), mint.as_ref(), &[ctx.accounts.token_data.reserve_bump]];
         let signer = [&seeds[..]];
@@ -184,10 +211,9 @@ pub mod token3 {
             &signer,
         );
 
-        let fee_amount = ctx.accounts.token_data.transaction_fee; 
         token::transfer(cpi_ctx, fee_amount)?;
 
-        // transfer USDC earned
+        // transfer USDC from treasury to earned
         let cpi_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -198,11 +224,9 @@ pub mod token3 {
             &signer,
         );
         
-        let usdc_value = token_amount * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
-        let earned_amount = usdc_value - fee_amount;
         token::transfer(cpi_ctx, earned_amount)?;
 
-        // transfer USDC from the User to Treasury
+        // transfer USDC from the User to earned
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -211,7 +235,34 @@ pub mod token3 {
                 to: ctx.accounts.earned_usdc_account.to_account_info(),
             },
         );
-        token::transfer(cpi_ctx, usdc_amount)?;
+        token::transfer(cpi_ctx, usdc_earned_amount)?;
+
+        // transfer USDC from the User to treasury
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.user_usdc_token.to_account_info(),
+                authority: ctx.accounts.user.to_account_info(),
+                to: ctx.accounts.earned_usdc_account.to_account_info(),
+            },
+        );
+        token::transfer(cpi_ctx, usdc_reward_amount)?;
+
+        // mint reward token to user
+        let seeds = &["MINT".as_bytes(), token_data.as_ref(), &[ctx.accounts.token_data.mint_bump]];
+        let signer = [&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::MintTo {
+                mint: ctx.accounts.token_mint.to_account_info(),
+                to: ctx.accounts.user_token.to_account_info(),
+                authority: ctx.accounts.token_mint.to_account_info(),
+            },
+            &signer,
+        );
+
+        token::mint_to(cpi_ctx, total_reward_amount)?;
         
         
         Ok(())
@@ -538,10 +589,10 @@ pub struct TokenData {
     pub mint_bump: u8,
     pub earned_bump: u8,
     pub reserve_bump: u8,
-    pub transaction_fee: u64,
-    pub sale_fee: u64,
-    pub discount: u64,
-    pub reward: u64,
+    pub transaction_fee: u64, // fee per transaction
+    pub sale_fee: u64, // usdc -> diam fee
+    pub discount: u64, // usdc -> merchant token discount
+    pub reward: u64, // token -> mint on redemption
 }
 
 #[error_code]
