@@ -14,7 +14,11 @@ pub const AUTHORITY: &str = "DfLZV18rD7wCQwjYvhTFwuvLh49WSbXFeJFPQb5czifH";
 pub mod token3 {
     use super::*;
 
-     pub fn new_token(ctx: Context<NewToken>, name: String, transaction_fee: u64, sale_fee: u64, discount: u64, reward_generic_token: u64, reward_merchant_token: u64, reward_usdc_token: u64) -> Result<()> {
+    pub fn init_treasury(_ctx: Context<InitTreasury>) -> Result<()> {
+       Ok(())
+    }
+    
+    pub fn new_token(ctx: Context<NewToken>, name: String, transaction_fee: u64, sale_fee: u64, discount: u64, reward_generic_token: u64, reward_merchant_token: u64, reward_usdc_token: u64) -> Result<()> {
         //TODO: check pdas match accounts passed
         let (token_pda, token_bump) =
             Pubkey::find_program_address(&["MINT".as_bytes(), ctx.accounts.token_data.key().as_ref()], ctx.program_id);
@@ -346,7 +350,7 @@ pub mod token3 {
         let merchant_usdc_earned = (merchant_token_amount - merchant_token_reward_amount) * (ctx.accounts.merchant_reserve_usdc_account.amount) / (ctx.accounts.merchant_token_mint.supply);
         // usdc value of generic tokens redeemed less rewards rebated
         let generic_usdc_earned = (generic_token_amount - generic_token_reward_amount) * (ctx.accounts.generic_reserve_usdc_account.amount) / (ctx.accounts.generic_token_mint.supply);
-        // usdc value of generic tokens redeemed less rewards rebated
+        // usdc value of generic tokens rewards transfer to merchant reserve
         let generic_usdc_reward = (generic_token_reward_amount) * (ctx.accounts.generic_reserve_usdc_account.amount) / (ctx.accounts.generic_token_mint.supply);
         
         // fixed transaction fee
@@ -514,6 +518,31 @@ pub mod token3 {
         
         Ok(())
     }
+}
+
+#[derive(Accounts)]
+pub struct InitTreasury<'info> {
+    #[account(
+        init,
+        payer = user,
+        seeds = ["TREASURY".as_bytes().as_ref(), mint.key().as_ref() ],
+        bump,
+        token::mint = mint,
+        token::authority = treasury_usdc_account,
+    )]
+    pub treasury_usdc_account: Account<'info, TokenAccount>,
+
+    // "USDC" Mint
+    #[account(
+        address = USDC_MINT_ADDRESS.parse::<Pubkey>().unwrap(),
+    )]
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]

@@ -36,6 +36,7 @@ let usdcPDA: PublicKey;
 let usdcBump: Number;
 
 let usdcMint: PublicKey;
+
 let treasury: Account;
 
 let tokenAuthority: Keypair;
@@ -98,6 +99,31 @@ describe("token3", () => {
     const usdcAccount = await getAccount(connection, treasury.address);
     console.log("USDC Mint:", usdcMint.toString());
     console.log("setup USDC Token Account:", Number(usdcAccount.amount));
+  });
+
+  it("Init Treasury", async () => {
+    const [treasuryPDA, treasuryBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("TREASURY"), usdcMintAddress.toBuffer()],
+      program.programId
+    );
+
+    try {
+      await program.rpc.initTreasury({
+        accounts: {
+          treasuryUsdcAccount: treasuryPDA,
+          mint: usdcMintAddress,
+          user: userWallet.publicKey,
+          systemProgram: SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+
+    const treasury = await getAccount(connection, treasuryPDA);
+    console.log("Check Treasury Mint:", treasury.mint.toString());
   });
 
   it("New Token", async () => {
