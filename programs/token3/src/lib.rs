@@ -14,7 +14,7 @@ pub const AUTHORITY: &str = "DfLZV18rD7wCQwjYvhTFwuvLh49WSbXFeJFPQb5czifH";
 pub mod token3 {
     use super::*;
 
-     pub fn new_token(ctx: Context<NewToken>, name: String, transaction_fee: u64, sale_fee: u64, discount: u64, reward: u64) -> Result<()> {
+     pub fn new_token(ctx: Context<NewToken>, name: String, transaction_fee: u64, sale_fee: u64, discount: u64, reward_generic_token: u64, reward_merchant_token: u64, reward_usdc_token: u64) -> Result<()> {
         //TODO: check pdas match accounts passed
         let (token_pda, token_bump) =
             Pubkey::find_program_address(&["MINT".as_bytes(), ctx.accounts.token_data.key().as_ref()], ctx.program_id);
@@ -49,7 +49,9 @@ pub mod token3 {
         token_data.transaction_fee = transaction_fee;
         token_data.sale_fee = sale_fee;
         token_data.discount = discount;
-        token_data.reward = reward;
+        token_data.reward_generic_token = reward_generic_token;
+        token_data.reward_merchant_token = reward_merchant_token;
+        token_data.reward_usdc_token = reward_usdc_token;
         
         Ok(())
     }
@@ -76,8 +78,8 @@ pub mod token3 {
         let sale_fee = &ctx.accounts.token_data.sale_fee;
         
         // TODO: Account for Decimals in Mint
-        let usdc_amount = amount * (100-discount) / 100;
-        let fee_amount = usdc_amount * (sale_fee) / 100;
+        let usdc_amount = amount * (10000-discount) / 10000;
+        let fee_amount = usdc_amount * (sale_fee) / 10000;
         let reserve_amount = usdc_amount - fee_amount ;
         
         // transfer USDC from the User to Treasury
@@ -109,7 +111,7 @@ pub mod token3 {
     pub fn redeem_usdc(ctx: Context<RedeemUsdc>, amount: u64,) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
-        let reward_amount = amount * ctx.accounts.token_data.reward / 100;
+        let reward_amount = amount * ctx.accounts.token_data.reward_usdc_token / 10000;
         let earned_amount = amount - reward_amount - fee_amount;
         
         // mint reward token to user
@@ -167,7 +169,7 @@ pub mod token3 {
 
     pub fn redeem_one_token(ctx: Context<RedeemOneToken>, amount: u64,) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
-        let reward_amount = amount * ctx.accounts.token_data.reward / 100;
+        let reward_amount = amount * ctx.accounts.token_data.reward_merchant_token / 10000;
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
         let usdc_value = (amount - reward_amount) * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
         let earned_amount = usdc_value - fee_amount;
@@ -182,22 +184,6 @@ pub mod token3 {
             },
         );
         token::burn(cpi_ctx, amount)?;
-        
-        // mint reward token to user
-        let seeds = &["MINT".as_bytes(), token_data.as_ref(), &[ctx.accounts.token_data.mint_bump]];
-        let signer = [&seeds[..]];
-
-        let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            token::MintTo {
-                mint: ctx.accounts.token_mint.to_account_info(),
-                to: ctx.accounts.user_token.to_account_info(),
-                authority: ctx.accounts.token_mint.to_account_info(),
-            },
-            &signer,
-        );
-
-        token::mint_to(cpi_ctx, reward_amount)?;
         
         // mint is usdc mint
         let mint = ctx.accounts.mint.key();
@@ -229,6 +215,22 @@ pub mod token3 {
         );
         
         token::transfer(cpi_ctx, earned_amount)?;
+
+        // mint reward token to user
+        let seeds = &["MINT".as_bytes(), token_data.as_ref(), &[ctx.accounts.token_data.mint_bump]];
+        let signer = [&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::MintTo {
+                mint: ctx.accounts.token_mint.to_account_info(),
+                to: ctx.accounts.user_token.to_account_info(),
+                authority: ctx.accounts.token_mint.to_account_info(),
+            },
+            &signer,
+        );
+
+        token::mint_to(cpi_ctx, reward_amount)?;
         
         
         Ok(())
@@ -236,8 +238,8 @@ pub mod token3 {
 
     pub fn redeem_two_token(ctx: Context<PartialRedeem>, token_amount: u64, usdc_amount:u64) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
-        let token_reward_amount = token_amount * ctx.accounts.token_data.reward / 100;
-        let usdc_reward_amount = usdc_amount * ctx.accounts.token_data.reward / 100;
+        let token_reward_amount = token_amount * ctx.accounts.token_data.reward_merchant_token / 10000;
+        let usdc_reward_amount = usdc_amount * ctx.accounts.token_data.reward_usdc_token / 10000;
         let total_reward_amount = token_reward_amount + usdc_reward_amount;
         let usdc_value = (token_amount - token_reward_amount) * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
@@ -271,7 +273,7 @@ pub mod token3 {
 
         token::transfer(cpi_ctx, fee_amount)?;
 
-        // transfer USDC from treasury to earned
+        // transfer USDC from reserve to earned
         let cpi_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -295,13 +297,13 @@ pub mod token3 {
         );
         token::transfer(cpi_ctx, usdc_earned_amount)?;
 
-        // transfer USDC from the User to treasury
+        // transfer USDC from the User to reserve
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
                 from: ctx.accounts.user_usdc_token.to_account_info(),
                 authority: ctx.accounts.user.to_account_info(),
-                to: ctx.accounts.earned_usdc_account.to_account_info(),
+                to: ctx.accounts.reserve_usdc_account.to_account_info(),
             },
         );
         token::transfer(cpi_ctx, usdc_reward_amount)?;
@@ -352,13 +354,13 @@ pub mod token3 {
     }
 
     //TODO: does each field need own function to update? can inputs be conditional?
-    pub fn update_token_data(ctx: Context<UpdateTokenData>, name: String, discount: u64, reward: u64) -> Result<()> {
+    pub fn update_token_data(ctx: Context<UpdateTokenData>, name: String, discount: u64, reward_usdc_token: u64) -> Result<()> {
         
         let token_data = &mut ctx.accounts.token_data;
         
         token_data.name = name;
         token_data.discount = discount;
-        token_data.reward = reward;
+        token_data.reward_usdc_token = reward_usdc_token;
         
         Ok(())
     }
@@ -714,7 +716,9 @@ pub struct TokenData {
     pub transaction_fee: u64, // fee per transaction
     pub sale_fee: u64, // usdc -> diam fee
     pub discount: u64, // usdc -> merchant token discount
-    pub reward: u64, // token -> mint on redemption
+    pub reward_generic_token: u64, // token -> mint on redemption
+    pub reward_merchant_token: u64, // token -> mint on redemption
+    pub reward_usdc_token: u64, // token -> mint on redemption
 }
 
 #[error_code]
