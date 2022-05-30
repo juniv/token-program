@@ -106,8 +106,66 @@ pub mod token3 {
         Ok(())
     }
 
+    pub fn redeem_usdc(ctx: Context<RedeemUsdc>, amount: u64,) -> Result<()> {
+        let token_data = ctx.accounts.token_data.key();
+        let fee_amount = ctx.accounts.token_data.transaction_fee; 
+        let reward_amount = amount * ctx.accounts.token_data.reward / 100;
+        let earned_amount = amount - reward_amount - fee_amount;
+        
+        // mint reward token to user
+        let seeds = &["MINT".as_bytes(), token_data.as_ref(), &[ctx.accounts.token_data.mint_bump]];
+        let signer = [&seeds[..]];
 
-    pub fn redeem_one_token(ctx: Context<Redeem>, amount: u64,) -> Result<()> {
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::MintTo {
+                mint: ctx.accounts.token_mint.to_account_info(),
+                to: ctx.accounts.user_token.to_account_info(),
+                authority: ctx.accounts.token_mint.to_account_info(),
+            },
+            &signer,
+        );
+
+        token::mint_to(cpi_ctx, reward_amount)?;
+    
+        // transfer USDC fee from User to treasury
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.user_usdc_token.to_account_info(),
+                authority: ctx.accounts.user.to_account_info(),
+                to: ctx.accounts.treasury_account.to_account_info(),
+            },
+        );
+        token::transfer(cpi_ctx, fee_amount)?;
+
+        // transfer USDC reserve
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.user_usdc_token.to_account_info(),
+                authority: ctx.accounts.user.to_account_info(),
+                to: ctx.accounts.reserve_usdc_account.to_account_info(),
+            },
+        );
+        token::transfer(cpi_ctx, reward_amount)?;
+
+        // transfer USDC earned
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.user_usdc_token.to_account_info(),
+                authority: ctx.accounts.user.to_account_info(),
+                to: ctx.accounts.earned_usdc_account.to_account_info(),
+            },
+        );
+        token::transfer(cpi_ctx, earned_amount)?;
+        
+        Ok(())
+    }
+
+
+    pub fn redeem_one_token(ctx: Context<RedeemOneToken>, amount: u64,) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
         let reward_amount = amount * ctx.accounts.token_data.reward / 100;
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
@@ -410,8 +468,73 @@ pub struct MintToken<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+
 #[derive(Accounts)]
-pub struct Redeem<'info> {
+pub struct RedeemUsdc<'info> {
+    #[account()]
+    pub token_data: Box<Account<'info, TokenData>>,
+
+    #[account(mut,
+        seeds = ["MINT".as_bytes().as_ref(), token_data.key().as_ref()],
+        bump = token_data.mint_bump
+    )]
+    pub token_mint: Box<Account<'info, Mint>>,
+    
+    // Mint Tokens here
+    #[account(mut,
+        constraint = user_token.mint == token_mint.key(),
+        constraint = user_token.owner == user.key() 
+    )]
+    pub user_token: Box<Account<'info, TokenAccount>>,
+
+    // USDC from here
+    #[account(mut,
+        constraint = user_usdc_token.mint == mint.key(),
+        constraint = user_usdc_token.owner == user.key()
+    )]
+    pub user_usdc_token: Box<Account<'info, TokenAccount>>,
+    
+    // The authority allowed to mutate the above ⬆
+    pub user: Signer<'info>,
+
+    // USDC to here
+    #[account(
+        mut,
+        constraint = reserve_usdc_account.mint == mint.key(),
+        seeds = ["RESERVE".as_bytes().as_ref(), token_data.key().as_ref(), mint.key().as_ref() ],
+        bump = token_data.reserve_bump,
+    )]
+    pub reserve_usdc_account: Box<Account<'info, TokenAccount>>,
+
+    // USDC to here
+    #[account(
+        mut,
+        constraint = reserve_usdc_account.mint == mint.key(),
+        seeds = ["EARNED".as_bytes().as_ref(), token_data.key().as_ref(), mint.key().as_ref() ],
+        bump = token_data.earned_bump,
+    )]
+    pub earned_usdc_account: Box<Account<'info, TokenAccount>>,
+    
+    
+    // Transaction fee to here
+    #[account(mut,
+        constraint = treasury_account.mint == mint.key(),
+    )]
+    pub treasury_account: Box<Account<'info, TokenAccount>>,
+    
+    // "USDC" Mint
+    #[account(
+        address = USDC_MINT_ADDRESS.parse::<Pubkey>().unwrap(),
+    )]
+    pub mint: Account<'info, Mint>,
+    
+    // SPL Token Program
+    pub token_program: Program<'info, Token>,
+}
+
+
+#[derive(Accounts)]
+pub struct RedeemOneToken<'info> {
     #[account()]
     pub token_data: Box<Account<'info, TokenData>>,
 
@@ -577,7 +700,6 @@ pub struct UpdateTokenData<'info> {
     )]
     pub user: Signer<'info>,
 }
-
 
 #[account]
 pub struct TokenData {
