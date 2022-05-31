@@ -14,10 +14,14 @@ pub const AUTHORITY: &str = "DfLZV18rD7wCQwjYvhTFwuvLh49WSbXFeJFPQb5czifH";
 pub mod token3 {
     use super::*;
 
+    // create program treasury USDC account
     pub fn init_treasury(_ctx: Context<InitTreasury>) -> Result<()> {
        Ok(())
     }
     
+    // create new token data account 
+    // create new reward token mint
+    // create reserve and earned USDC acounts for new reward token 
     pub fn new_token(ctx: Context<NewToken>, name: String, transaction_fee: u64, sale_fee: u64, discount: u64, reward_generic_token: u64, reward_merchant_token: u64, reward_usdc_token: u64) -> Result<()> {
         //TODO: check pdas match accounts passed
         let (token_pda, token_bump) =
@@ -60,6 +64,7 @@ pub mod token3 {
         Ok(())
     }
 
+    // mint reward tokens
     pub fn mint_token(ctx: Context<MintToken>, amount: u64) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
 
@@ -112,6 +117,7 @@ pub mod token3 {
         Ok(())
     }
 
+    // redeem using only USDC
     pub fn redeem_usdc(ctx: Context<RedeemUsdc>, amount: u64,) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
@@ -170,7 +176,7 @@ pub mod token3 {
         Ok(())
     }
 
-
+    // redeem only using one reward token
     pub fn redeem_one_token(ctx: Context<RedeemOneToken>, amount: u64,) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
         let reward_amount = amount * ctx.accounts.token_data.reward_merchant_token / 10000;
@@ -240,6 +246,7 @@ pub mod token3 {
         Ok(())
     }
 
+    // redeem using two reward tokens
     pub fn redeem_two_token(ctx: Context<RedeemTwoToken>, token_amount: u64, usdc_amount:u64) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
         let token_reward_amount = token_amount * ctx.accounts.token_data.reward_merchant_token / 10000;
@@ -332,7 +339,9 @@ pub mod token3 {
         Ok(())
     }
 
-     pub fn redeem_three_token(ctx: Context<RedeemThreeToken>, merchant_token_amount: u64, generic_token_amount: u64, usdc_amount:u64) -> Result<()> {
+    // TODO: Check math
+    // redeem using two reward tokens and USDC
+    pub fn redeem_three_token(ctx: Context<RedeemThreeToken>, merchant_token_amount: u64, generic_token_amount: u64, usdc_amount:u64) -> Result<()> {
         let merchant_token_data = ctx.accounts.merchant_token_data.key();
         let generic_token_data = ctx.accounts.generic_token_data.key();
         
@@ -482,7 +491,8 @@ pub mod token3 {
         Ok(())
     }
 
-   pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
+    // withdraw from USDC from earned accounts to program treasury
+    pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         
         let token_data = ctx.accounts.token_data.key();
         let mint = ctx.accounts.mint.key();
@@ -508,6 +518,7 @@ pub mod token3 {
     }
 
     //TODO: does each field need own function to update? can inputs be conditional?
+    // update token account data
     pub fn update_token_data(ctx: Context<UpdateTokenData>, name: String, discount: u64, reward_usdc_token: u64) -> Result<()> {
         
         let token_data = &mut ctx.accounts.token_data;
