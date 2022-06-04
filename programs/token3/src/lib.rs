@@ -19,11 +19,12 @@ pub mod token3 {
        Ok(())
     }
     
-    // create new token data account 
+    // create new token_data account 
     // create new reward token mint
-    // create reserve and earned USDC acounts for new reward token 
+    // create reserve and earned USDC acounts for new reward token
+    // store fields in token_data account
     pub fn new_token(ctx: Context<NewToken>, name: String, transaction_fee: u64, sale_fee: u64, discount: u64, reward_generic_token: u64, reward_merchant_token: u64, reward_usdc_token: u64) -> Result<()> {
-        //TODO: check pdas match accounts passed
+        //Derive PDAs for Mint, Earned, Reserve
         let (token_pda, token_bump) =
             Pubkey::find_program_address(&["MINT".as_bytes(), ctx.accounts.token_data.key().as_ref()], ctx.program_id);
 
@@ -33,6 +34,7 @@ pub mod token3 {
         let (reserve_pda, reserve_bump) =
             Pubkey::find_program_address(&["RESERVE".as_bytes(), ctx.accounts.token_data.key().as_ref(), ctx.accounts.mint.key().as_ref()], ctx.program_id);
 
+        // check derived PDA matches account provided
         if token_pda != ctx.accounts.token_mint.key() {
             return err!(ErrorCode::PDA);
         }
@@ -45,6 +47,7 @@ pub mod token3 {
             return err!(ErrorCode::PDA);
         }
 
+        // update fields on token_data account
         let token_data = &mut ctx.accounts.token_data;
         token_data.name = name;
         token_data.user = ctx.accounts.user.key();
@@ -64,8 +67,17 @@ pub mod token3 {
         Ok(())
     }
 
-    // mint reward tokens
+    // mint reward tokens in exchange for "USDC"
     pub fn mint_token(ctx: Context<MintToken>, amount: u64) -> Result<()> {
+        // derive treasury_pda
+        let (treasury_pda, _treasury_bump) =
+            Pubkey::find_program_address(&["TREASURY".as_bytes(), ctx.accounts.mint.key().as_ref()], ctx.program_id);
+        
+        // check derived PDA matches account provided
+        if treasury_pda != ctx.accounts.treasury_account.key() {
+            return err!(ErrorCode::PDA);
+        }
+
         let token_data = ctx.accounts.token_data.key();
 
         // mint tokens to user
@@ -86,12 +98,14 @@ pub mod token3 {
         let discount = &ctx.accounts.token_data.discount;
         let sale_fee = &ctx.accounts.token_data.sale_fee;
         
-        // TODO: Account for Decimals in Mint
+        // TODO: Account for Decimals in Mint (right now both tokens same decimals for simplicity)
+        // TODO: Safe Math
         let usdc_amount = amount * (10000-discount) / 10000;
         let fee_amount = usdc_amount * (sale_fee) / 10000;
         let reserve_amount = usdc_amount - fee_amount ;
         
         // transfer USDC from the User to Treasury
+        // fee amount
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -103,6 +117,7 @@ pub mod token3 {
         token::transfer(cpi_ctx, fee_amount)?;
 
         // transfer USDC from the User to Reserve
+        // amount of USDC backing minted tokens
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -119,9 +134,22 @@ pub mod token3 {
 
     // redeem using only USDC
     pub fn redeem_usdc(ctx: Context<RedeemUsdc>, amount: u64,) -> Result<()> {
+        // derive treasury_pda
+        let (treasury_pda, _treasury_bump) =
+            Pubkey::find_program_address(&["TREASURY".as_bytes(), ctx.accounts.mint.key().as_ref()], ctx.program_id);
+        
+        // check derived PDA matches account provided
+        if treasury_pda != ctx.accounts.treasury_account.key() {
+            return err!(ErrorCode::PDA);
+        }
+
         let token_data = ctx.accounts.token_data.key();
+        
+        // transaction fee
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
+        // rebate merchant token amount (amount to mint)
         let reward_amount = amount * ctx.accounts.token_data.reward_usdc_token / 10000;
+        // amount USDC sent to merchant earned account
         let earned_amount = amount - reward_amount - fee_amount;
         
         // mint reward token to user
@@ -151,7 +179,7 @@ pub mod token3 {
         );
         token::transfer(cpi_ctx, fee_amount)?;
 
-        // transfer USDC reserve
+        // transfer USDC from user to reserve
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
