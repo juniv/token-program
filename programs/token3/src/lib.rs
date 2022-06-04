@@ -5,7 +5,7 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 // Replace for Devnet Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr
 // Replace for Localnet 8fFnX9WSPjJEADtG5jQvQQptzfFmmjd6hrW7HjuUT8ur
-pub const USDC_MINT_ADDRESS: &str = "8fFnX9WSPjJEADtG5jQvQQptzfFmmjd6hrW7HjuUT8ur";
+pub const USDC_MINT_ADDRESS: &str = "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr";
 
 pub const AUTHORITY: &str = "DfLZV18rD7wCQwjYvhTFwuvLh49WSbXFeJFPQb5czifH";
 
@@ -179,7 +179,7 @@ pub mod token3 {
         );
         token::transfer(cpi_ctx, fee_amount)?;
 
-        // transfer USDC from user to reserve
+        // transfer USDC from user to reserve 
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -277,6 +277,8 @@ pub mod token3 {
     // redeem using two reward tokens
     pub fn redeem_two_token(ctx: Context<RedeemTwoToken>, token_amount: u64, usdc_amount:u64) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
+        
+        // calculate rewards
         let token_reward_amount = token_amount * ctx.accounts.token_data.reward_merchant_token / 10000;
         let usdc_reward_amount = usdc_amount * ctx.accounts.token_data.reward_usdc_token / 10000;
         let total_reward_amount = token_reward_amount + usdc_reward_amount;
@@ -285,6 +287,7 @@ pub mod token3 {
         let earned_amount = usdc_value - fee_amount;
         let usdc_earned_amount = usdc_amount - usdc_reward_amount; 
 
+        //burn tokens
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Burn {
@@ -299,7 +302,7 @@ pub mod token3 {
         let seeds = &["RESERVE".as_bytes(), token_data.as_ref(), mint.as_ref(), &[ctx.accounts.token_data.reserve_bump]];
         let signer = [&seeds[..]];
 
-        // transfer USDC fee.
+        // transfer USDC fee to treasury.
         let cpi_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {

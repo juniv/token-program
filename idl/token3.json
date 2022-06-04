@@ -1,0 +1,593 @@
+{
+  "version": "0.1.0",
+  "name": "token3",
+  "instructions": [
+    {
+      "name": "initTreasury",
+      "accounts": [
+        {
+          "name": "treasuryUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "newToken",
+      "accounts": [
+        {
+          "name": "tokenData",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "earnedUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "reserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "transactionFee",
+          "type": "u64"
+        },
+        {
+          "name": "saleFee",
+          "type": "u64"
+        },
+        {
+          "name": "discount",
+          "type": "u64"
+        },
+        {
+          "name": "rewardGenericToken",
+          "type": "u64"
+        },
+        {
+          "name": "rewardMerchantToken",
+          "type": "u64"
+        },
+        {
+          "name": "rewardUsdcToken",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "mintToken",
+      "accounts": [
+        {
+          "name": "tokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "reserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userUsdcToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "redeemUsdc",
+      "accounts": [
+        {
+          "name": "tokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userUsdcToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "reserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "earnedUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "redeemOneToken",
+      "accounts": [
+        {
+          "name": "tokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "reserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "earnedUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "redeemTwoToken",
+      "accounts": [
+        {
+          "name": "tokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userUsdcToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "reserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "earnedUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "tokenAmount",
+          "type": "u64"
+        },
+        {
+          "name": "usdcAmount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "redeemThreeToken",
+      "accounts": [
+        {
+          "name": "merchantTokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "genericTokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "merchantTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "genericTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userMerchantToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGenericToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userUsdcToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "merchantReserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "genericReserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "merchantEarnedUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "merchantTokenAmount",
+          "type": "u64"
+        },
+        {
+          "name": "genericTokenAmount",
+          "type": "u64"
+        },
+        {
+          "name": "usdcAmount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "accounts": [
+        {
+          "name": "tokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "earnedUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "withdrawUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateTokenData",
+      "accounts": [
+        {
+          "name": "tokenData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "discount",
+          "type": "u64"
+        },
+        {
+          "name": "rewardUsdcToken",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "TokenData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "user",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "earned",
+            "type": "publicKey"
+          },
+          {
+            "name": "reserve",
+            "type": "publicKey"
+          },
+          {
+            "name": "mintBump",
+            "type": "u8"
+          },
+          {
+            "name": "earnedBump",
+            "type": "u8"
+          },
+          {
+            "name": "reserveBump",
+            "type": "u8"
+          },
+          {
+            "name": "transactionFee",
+            "type": "u64"
+          },
+          {
+            "name": "saleFee",
+            "type": "u64"
+          },
+          {
+            "name": "discount",
+            "type": "u64"
+          },
+          {
+            "name": "rewardGenericToken",
+            "type": "u64"
+          },
+          {
+            "name": "rewardMerchantToken",
+            "type": "u64"
+          },
+          {
+            "name": "rewardUsdcToken",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "PDA",
+      "msg": "PDA not match"
+    }
+  ],
+  "metadata": {
+    "address": "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS",
+    "origin": "anchor",
+    "binaryVersion": "0.24.2",
+    "libVersion": "0.24.2"
+  }
+}
