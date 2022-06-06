@@ -206,6 +206,7 @@ pub mod token3 {
 
     // redeem only using one reward token
     pub fn redeem_one_token(ctx: Context<RedeemOneToken>, amount: u64,) -> Result<()> {
+        //TODO: safe math
         let token_data = ctx.accounts.token_data.key();
         let reward_amount = amount * ctx.accounts.token_data.reward_merchant_token / 10000;
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
@@ -276,6 +277,7 @@ pub mod token3 {
 
     // redeem only using one reward token
     pub fn redeem_one_generic_token(ctx: Context<RedeemOneGenericToken>, amount: u64,) -> Result<()> {
+        //TODO: safe math
         let generic_token_data = ctx.accounts.generic_token_data.key();
         let token_data = ctx.accounts.token_data.key();
         let reward_amount = amount * ctx.accounts.generic_token_data.reward_merchant_token / 10000;
@@ -438,12 +440,12 @@ pub mod token3 {
         Ok(())
     }
 
-    // TODO: Check math
     // redeem using two reward tokens and USDC
     pub fn redeem_three_token(ctx: Context<RedeemThreeToken>, merchant_token_amount: u64, generic_token_amount: u64, usdc_amount:u64) -> Result<()> {
         let merchant_token_data = ctx.accounts.merchant_token_data.key();
         let generic_token_data = ctx.accounts.generic_token_data.key();
         
+        //TODO: safe math
         // reward for merchant token spent
         let merchant_token_reward_amount = merchant_token_amount * ctx.accounts.merchant_token_data.reward_merchant_token / 10000;
         // reward for generic token spent 
