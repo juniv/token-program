@@ -1,6 +1,7 @@
 export * from './initTreasury'
 export * from './mintToken'
 export * from './newToken'
+export * from './redeemOneGenericToken'
 export * from './redeemOneToken'
 export * from './redeemThreeToken'
 export * from './redeemTwoToken'

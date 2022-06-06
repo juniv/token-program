@@ -292,6 +292,77 @@
       ]
     },
     {
+      "name": "redeemOneGenericToken",
+      "accounts": [
+        {
+          "name": "genericTokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenData",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "genericTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGenericToken",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "genericReserveUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "earnedUsdcAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "redeemTwoToken",
       "accounts": [
         {
@@ -585,7 +656,7 @@
     }
   ],
   "metadata": {
-    "address": "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS",
+    "address": "G28ceN5471mPMKhSThZu4tvzK6Skbxrr8qy4abskVsYJ",
     "origin": "anchor",
     "binaryVersion": "0.24.2",
     "libVersion": "0.24.2"

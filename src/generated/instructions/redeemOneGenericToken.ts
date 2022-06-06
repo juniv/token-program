@@ -11,19 +11,19 @@ import * as web3 from '@solana/web3.js'
 
 /**
  * @category Instructions
- * @category RedeemOneToken
+ * @category RedeemOneGenericToken
  * @category generated
  */
-export type RedeemOneTokenInstructionArgs = {
+export type RedeemOneGenericTokenInstructionArgs = {
   amount: beet.bignum
 }
 /**
  * @category Instructions
- * @category RedeemOneToken
+ * @category RedeemOneGenericToken
  * @category generated
  */
-export const redeemOneTokenStruct = new beet.BeetArgsStruct<
-  RedeemOneTokenInstructionArgs & {
+export const redeemOneGenericTokenStruct = new beet.BeetArgsStruct<
+  RedeemOneGenericTokenInstructionArgs & {
     instructionDiscriminator: number[] /* size: 8 */
   }
 >(
@@ -31,71 +31,90 @@ export const redeemOneTokenStruct = new beet.BeetArgsStruct<
     ['instructionDiscriminator', beet.uniformFixedSizeArray(beet.u8, 8)],
     ['amount', beet.u64],
   ],
-  'RedeemOneTokenInstructionArgs'
+  'RedeemOneGenericTokenInstructionArgs'
 )
 /**
- * Accounts required by the _redeemOneToken_ instruction
+ * Accounts required by the _redeemOneGenericToken_ instruction
  *
+ * @property [] genericTokenData
  * @property [] tokenData
+ * @property [_writable_] genericTokenMint
  * @property [_writable_] tokenMint
  * @property [_writable_] userToken
+ * @property [_writable_] userGenericToken
  * @property [**signer**] user
- * @property [_writable_] reserveUsdcAccount
+ * @property [_writable_] genericReserveUsdcAccount
  * @property [_writable_] earnedUsdcAccount
  * @property [_writable_] treasuryAccount
  * @property [] mint
  * @category Instructions
- * @category RedeemOneToken
+ * @category RedeemOneGenericToken
  * @category generated
  */
-export type RedeemOneTokenInstructionAccounts = {
+export type RedeemOneGenericTokenInstructionAccounts = {
+  genericTokenData: web3.PublicKey
   tokenData: web3.PublicKey
+  genericTokenMint: web3.PublicKey
   tokenMint: web3.PublicKey
   userToken: web3.PublicKey
+  userGenericToken: web3.PublicKey
   user: web3.PublicKey
-  reserveUsdcAccount: web3.PublicKey
+  genericReserveUsdcAccount: web3.PublicKey
   earnedUsdcAccount: web3.PublicKey
   treasuryAccount: web3.PublicKey
   mint: web3.PublicKey
 }
 
-export const redeemOneTokenInstructionDiscriminator = [
-  87, 95, 28, 103, 251, 163, 62, 161,
+export const redeemOneGenericTokenInstructionDiscriminator = [
+  26, 167, 203, 0, 207, 22, 228, 34,
 ]
 
 /**
- * Creates a _RedeemOneToken_ instruction.
+ * Creates a _RedeemOneGenericToken_ instruction.
  *
  * @param accounts that will be accessed while the instruction is processed
  * @param args to provide as instruction data to the program
  *
  * @category Instructions
- * @category RedeemOneToken
+ * @category RedeemOneGenericToken
  * @category generated
  */
-export function createRedeemOneTokenInstruction(
-  accounts: RedeemOneTokenInstructionAccounts,
-  args: RedeemOneTokenInstructionArgs
+export function createRedeemOneGenericTokenInstruction(
+  accounts: RedeemOneGenericTokenInstructionAccounts,
+  args: RedeemOneGenericTokenInstructionArgs
 ) {
   const {
+    genericTokenData,
     tokenData,
+    genericTokenMint,
     tokenMint,
     userToken,
+    userGenericToken,
     user,
-    reserveUsdcAccount,
+    genericReserveUsdcAccount,
     earnedUsdcAccount,
     treasuryAccount,
     mint,
   } = accounts
 
-  const [data] = redeemOneTokenStruct.serialize({
-    instructionDiscriminator: redeemOneTokenInstructionDiscriminator,
+  const [data] = redeemOneGenericTokenStruct.serialize({
+    instructionDiscriminator: redeemOneGenericTokenInstructionDiscriminator,
     ...args,
   })
   const keys: web3.AccountMeta[] = [
     {
+      pubkey: genericTokenData,
+      isWritable: false,
+      isSigner: false,
+    },
+    {
       pubkey: tokenData,
       isWritable: false,
+      isSigner: false,
+    },
+    {
+      pubkey: genericTokenMint,
+      isWritable: true,
       isSigner: false,
     },
     {
@@ -109,12 +128,17 @@ export function createRedeemOneTokenInstruction(
       isSigner: false,
     },
     {
+      pubkey: userGenericToken,
+      isWritable: true,
+      isSigner: false,
+    },
+    {
       pubkey: user,
       isWritable: false,
       isSigner: true,
     },
     {
-      pubkey: reserveUsdcAccount,
+      pubkey: genericReserveUsdcAccount,
       isWritable: true,
       isSigner: false,
     },

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount,};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("G28ceN5471mPMKhSThZu4tvzK6Skbxrr8qy4abskVsYJ");
 
 // Replace for Devnet Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr
 // Replace for Localnet 8fFnX9WSPjJEADtG5jQvQQptzfFmmjd6hrW7HjuUT8ur
@@ -179,7 +179,7 @@ pub mod token3 {
         );
         token::transfer(cpi_ctx, fee_amount)?;
 
-        // transfer USDC from user to reserve 
+        // transfer USDC from user to reserve
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -274,11 +274,80 @@ pub mod token3 {
         Ok(())
     }
 
+    // redeem only using one reward token
+    pub fn redeem_one_generic_token(ctx: Context<RedeemOneGenericToken>, amount: u64,) -> Result<()> {
+        let generic_token_data = ctx.accounts.generic_token_data.key();
+        let token_data = ctx.accounts.token_data.key();
+        let reward_amount = amount * ctx.accounts.generic_token_data.reward_merchant_token / 10000;
+        let fee_amount = ctx.accounts.generic_token_data.transaction_fee; 
+        let usdc_value = (amount - reward_amount) * (ctx.accounts.generic_reserve_usdc_account.amount) / (ctx.accounts.generic_token_mint.supply);
+        let earned_amount = usdc_value - fee_amount;
+        
+        // burn tokens        
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Burn {
+                mint: ctx.accounts.generic_token_mint.to_account_info(),
+                from: ctx.accounts.user_generic_token.to_account_info(),
+                authority: ctx.accounts.user.to_account_info(),
+            },
+        );
+        token::burn(cpi_ctx, amount)?;
+        
+        // mint is usdc mint
+        let mint = ctx.accounts.mint.key();
+        let seeds = &["RESERVE".as_bytes(), generic_token_data.as_ref(), mint.as_ref(), &[ctx.accounts.generic_token_data.reserve_bump]];
+        let signer = [&seeds[..]];
+
+        // transfer USDC fee from reserve to treasury
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.generic_reserve_usdc_account.to_account_info(),
+                authority: ctx.accounts.generic_reserve_usdc_account.to_account_info(),
+                to: ctx.accounts.treasury_account.to_account_info(),
+            },
+            &signer,
+        );
+
+        token::transfer(cpi_ctx, fee_amount)?;
+
+        // transfer USDC earned
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.generic_reserve_usdc_account.to_account_info(),
+                authority: ctx.accounts.generic_reserve_usdc_account.to_account_info(),
+                to: ctx.accounts.earned_usdc_account.to_account_info(),
+            },
+            &signer,
+        );
+        
+        token::transfer(cpi_ctx, earned_amount)?;
+
+        // mint reward token to user
+        let seeds = &["MINT".as_bytes(), token_data.as_ref(), &[ctx.accounts.token_data.mint_bump]];
+        let signer = [&seeds[..]];
+
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token::MintTo {
+                mint: ctx.accounts.token_mint.to_account_info(),
+                to: ctx.accounts.user_token.to_account_info(),
+                authority: ctx.accounts.token_mint.to_account_info(),
+            },
+            &signer,
+        );
+
+        token::mint_to(cpi_ctx, reward_amount)?;
+        
+        
+        Ok(())
+    }
+
     // redeem using two reward tokens
     pub fn redeem_two_token(ctx: Context<RedeemTwoToken>, token_amount: u64, usdc_amount:u64) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
-        
-        // calculate rewards
         let token_reward_amount = token_amount * ctx.accounts.token_data.reward_merchant_token / 10000;
         let usdc_reward_amount = usdc_amount * ctx.accounts.token_data.reward_usdc_token / 10000;
         let total_reward_amount = token_reward_amount + usdc_reward_amount;
@@ -287,7 +356,6 @@ pub mod token3 {
         let earned_amount = usdc_value - fee_amount;
         let usdc_earned_amount = usdc_amount - usdc_reward_amount; 
 
-        //burn tokens
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Burn {
@@ -302,7 +370,7 @@ pub mod token3 {
         let seeds = &["RESERVE".as_bytes(), token_data.as_ref(), mint.as_ref(), &[ctx.accounts.token_data.reserve_bump]];
         let signer = [&seeds[..]];
 
-        // transfer USDC fee to treasury.
+        // transfer USDC fee.
         let cpi_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -791,6 +859,78 @@ pub struct RedeemOneToken<'info> {
     #[account(
         mut,
         constraint = reserve_usdc_account.mint == mint.key(),
+        seeds = ["EARNED".as_bytes().as_ref(), token_data.key().as_ref(), mint.key().as_ref() ],
+        bump = token_data.earned_bump,
+    )]
+    pub earned_usdc_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(mut,
+        constraint = treasury_account.mint == mint.key(),
+    )]
+    pub treasury_account: Box<Account<'info, TokenAccount>>,
+
+    // "USDC" Mint
+    #[account(
+        address = USDC_MINT_ADDRESS.parse::<Pubkey>().unwrap(),
+    )]
+    pub mint: Account<'info, Mint>,
+
+    // SPL Token Program
+    pub token_program: Program<'info, Token>,
+
+}
+
+#[derive(Accounts)]
+pub struct RedeemOneGenericToken<'info> {
+    #[account()]
+    pub generic_token_data: Box<Account<'info, TokenData>>,
+
+    #[account()]
+    pub token_data: Box<Account<'info, TokenData>>,
+
+
+    #[account(mut,
+        seeds = ["MINT".as_bytes().as_ref(), generic_token_data.key().as_ref()],
+        bump = generic_token_data.mint_bump
+    )]
+    pub generic_token_mint: Box<Account<'info, Mint>>,
+
+    #[account(mut,
+        seeds = ["MINT".as_bytes().as_ref(), token_data.key().as_ref()],
+        bump = token_data.mint_bump
+    )]
+    pub token_mint: Box<Account<'info, Mint>>,
+
+    // Mint Tokens here
+    #[account(mut,
+        constraint = user_token.mint == token_mint.key(),
+        constraint = user_token.owner == user.key() 
+    )]
+    pub user_token: Box<Account<'info, TokenAccount>>,
+
+    // Mint Tokens here
+    #[account(mut,
+        constraint = user_generic_token.mint == generic_token_mint.key(),
+        constraint = user_generic_token.owner == user.key() 
+    )]
+    pub user_generic_token: Box<Account<'info, TokenAccount>>,
+
+    // The authority allowed to mutate the above ⬆
+    pub user: Signer<'info>,
+
+    // USDC to here
+    #[account(
+        mut,
+        constraint = generic_reserve_usdc_account.mint == mint.key(),
+        seeds = ["RESERVE".as_bytes().as_ref(), generic_token_data.key().as_ref(), mint.key().as_ref() ],
+        bump = generic_token_data.reserve_bump,
+    )]
+    pub generic_reserve_usdc_account: Box<Account<'info, TokenAccount>>,
+
+    // USDC to here
+    #[account(
+        mut,
+        constraint = earned_usdc_account.mint == mint.key(),
         seeds = ["EARNED".as_bytes().as_ref(), token_data.key().as_ref(), mint.key().as_ref() ],
         bump = token_data.earned_bump,
     )]

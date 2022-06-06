@@ -1,10 +1,10 @@
 [features]
 seeds = false
 [programs.localnet]
-token3 = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+token3 = "G28ceN5471mPMKhSThZu4tvzK6Skbxrr8qy4abskVsYJ"
 
 [programs.devnet]
-token3 = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+token3 = "G28ceN5471mPMKhSThZu4tvzK6Skbxrr8qy4abskVsYJ"
 
 [registry]
 url = "https://anchor.projectserum.com"

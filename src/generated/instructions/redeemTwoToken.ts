@@ -152,7 +152,7 @@ export function createRedeemTwoTokenInstruction(
 
   const ix = new web3.TransactionInstruction({
     programId: new web3.PublicKey(
-      'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS'
+      'G28ceN5471mPMKhSThZu4tvzK6Skbxrr8qy4abskVsYJ'
     ),
     keys,
     data,
