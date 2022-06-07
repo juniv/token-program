@@ -5,7 +5,7 @@ declare_id!("G28ceN5471mPMKhSThZu4tvzK6Skbxrr8qy4abskVsYJ");
 
 // Replace for Devnet Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr
 // Replace for Localnet 8fFnX9WSPjJEADtG5jQvQQptzfFmmjd6hrW7HjuUT8ur
-pub const USDC_MINT_ADDRESS: &str = "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr";
+pub const USDC_MINT_ADDRESS: &str = "8fFnX9WSPjJEADtG5jQvQQptzfFmmjd6hrW7HjuUT8ur";
 
 pub const AUTHORITY: &str = "DfLZV18rD7wCQwjYvhTFwuvLh49WSbXFeJFPQb5czifH";
 
@@ -208,7 +208,8 @@ pub mod token3 {
     pub fn redeem_one_token(ctx: Context<RedeemOneToken>, amount: u64,) -> Result<()> {
         //TODO: safe math
         let token_data = ctx.accounts.token_data.key();
-        let reward_amount = amount * ctx.accounts.token_data.reward_merchant_token / 10000;
+        // let reward_amount = amount * ctx.accounts.token_data.reward_merchant_token / 10000;
+        let reward_amount = (ctx.accounts.token_data.reward_merchant_token.checked_mul(amount).ok_or(ErrorCode::MATH)?).checked_div(10000).ok_or(ErrorCode::MATH)?;
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
         let usdc_value = (amount - reward_amount) * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
         let earned_amount = usdc_value - fee_amount;
@@ -350,7 +351,7 @@ pub mod token3 {
     // redeem using two reward tokens
     pub fn redeem_two_token(ctx: Context<RedeemTwoToken>, token_amount: u64, usdc_amount:u64) -> Result<()> {
         let token_data = ctx.accounts.token_data.key();
-        let token_reward_amount = token_amount * ctx.accounts.token_data.reward_merchant_token / 10000;
+        let token_reward_amount = token_amount*(ctx.accounts.token_data.reward_merchant_token)/10000;
         let usdc_reward_amount = usdc_amount * ctx.accounts.token_data.reward_usdc_token / 10000;
         let total_reward_amount = token_reward_amount + usdc_reward_amount;
         let usdc_value = (token_amount - token_reward_amount) * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
@@ -1175,5 +1176,7 @@ pub struct TokenData {
 #[error_code]
 pub enum ErrorCode {
     #[msg("PDA not match")]
-    PDA
+    PDA,
+    #[msg("Math Error")]
+    MATH
 }

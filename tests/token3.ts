@@ -30,7 +30,7 @@ import { u64 } from "@solana/buffer-layout-utils";
 
 import fs from "fs";
 
-const initialAmount = 10000000;
+const initialAmount = 10000;
 
 let usdcPDA: PublicKey;
 let usdcBump: Number;
@@ -73,9 +73,11 @@ describe("token3", () => {
       LAMPORTS_PER_SOL
     );
     await connection.confirmTransaction(signature);
-
+    
+    // //usdc devnet address
     // usdcMint = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
-
+    
+    // create "usdc" mint to for localhost testing
     usdcMint = await createMint(
       connection, //connection to Solana
       await randomPayer(), //user randomPayer helper to create accounts for test
@@ -365,113 +367,7 @@ describe("token3", () => {
   //   console.log("userUSDC Balance:", balance5);
   // });
 
-  // it("Redeem One Token", async () => {
-  //   const Wallet = Keypair.generate();
-  //   const AirdropSignature = await connection.requestAirdrop(
-  //     Wallet.publicKey,
-  //     LAMPORTS_PER_SOL
-  //   );
-
-  //   await connection.confirmTransaction(AirdropSignature);
-
-  //   const [tokenPDA, tokenBump] = await PublicKey.findProgramAddress(
-  //     [Buffer.from("MINT"), newAccount.publicKey.toBuffer()],
-  //     program.programId
-  //   );
-
-  //   // Get the token account of the fromWallet address, and if it does not exist, create it
-  //   const TokenAccount = await getOrCreateAssociatedTokenAccount(
-  //     connection,
-  //     await randomPayer(),
-  //     tokenPDA,
-  //     Wallet.publicKey
-  //   );
-
-  //   const usdcTokenAccount = await getOrCreateAssociatedTokenAccount(
-  //     connection,
-  //     await randomPayer(),
-  //     usdcMint,
-  //     Wallet.publicKey
-  //   );
-
-  //   await mintTo(
-  //     connection, // connection to Solana
-  //     await randomPayer(), // randomPayer as payer for test
-  //     usdcMint, // USDC Token Mint
-  //     usdcTokenAccount.address, // User USDC Token Account (destination)
-  //     tokenAuthority, // Mint Authority (required as signer)
-  //     initialAmount
-  //   );
-
-  //   const token = await program.account.tokenData.fetch(newAccount.publicKey);
-
-  //   try {
-  //     await program.rpc.mintToken(new anchor.BN(initialAmount), {
-  //       accounts: {
-  //         tokenData: newAccount.publicKey,
-  //         tokenMint: token.mint,
-  //         reserveUsdcAccount: token.reserve,
-  //         treasuryAccount: treasuryPDA,
-  //         userToken: TokenAccount.address,
-  //         userUsdcToken: usdcTokenAccount.address,
-  //         user: Wallet.publicKey,
-  //         mint: usdcMint,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       },
-  //       signers: [Wallet],
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-
-  //   try {
-  //     await program.rpc.redeemOneToken(new anchor.BN(initialAmount), {
-  //       accounts: {
-  //         tokenData: newAccount.publicKey,
-  //         tokenMint: token.mint,
-  //         userToken: TokenAccount.address,
-  //         user: Wallet.publicKey,
-  //         reserveUsdcAccount: token.reserve,
-  //         earnedUsdcAccount: token.earned,
-  //         treasuryAccount: treasuryPDA,
-  //         mint: usdcMint,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       },
-  //       signers: [Wallet],
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-
-  //   const balance1 = await getMint(connection, tokenPDA);
-
-  //   const balance2 = (await connection.getTokenAccountBalance(token.reserve))
-  //     .value.amount;
-
-  //   const balance3 = (await connection.getTokenAccountBalance(treasuryPDA))
-  //     .value.amount;
-
-  //   const balance4 = (
-  //     await connection.getTokenAccountBalance(TokenAccount.address)
-  //   ).value.amount;
-
-  //   const balance5 = (
-  //     await connection.getTokenAccountBalance(usdcTokenAccount.address)
-  //   ).value.amount;
-
-  //   const balance6 = (await connection.getTokenAccountBalance(token.earned))
-  //     .value.amount;
-
-  //   // console.log("Token Supply Balance:", balance2);
-  //   console.log("Token Mint Supply:", Number(balance1.supply));
-  //   console.log("reserve Balance:", balance2);
-  //   console.log("treasury Balance:", balance3);
-  //   console.log("earned Balance:", balance6);
-  //   console.log("userToken Balance:", balance4);
-  //   console.log("userUSDC Balance:", balance5);
-  // });
-
-  it("Redeem Generic Token", async () => {
+  it("Redeem One Token", async () => {
     const Wallet = Keypair.generate();
     const AirdropSignature = await connection.requestAirdrop(
       Wallet.publicKey,
@@ -479,76 +375,6 @@ describe("token3", () => {
     );
 
     await connection.confirmTransaction(AirdropSignature);
-
-    const genericTokenAccount = Keypair.generate();
-    console.log("TokenDataAccount:", genericTokenAccount.publicKey.toString());
-
-    const [tokenPDAGeneric, tokenBumpGeneric] =
-      await PublicKey.findProgramAddress(
-        [Buffer.from("MINT"), genericTokenAccount.publicKey.toBuffer()],
-        program.programId
-      );
-    
-    console.log(tokenPDAGeneric.toString())
-
-    const [earnedPDAGeneric, earnedBumpGeneric] =
-      await PublicKey.findProgramAddress(
-        [
-          Buffer.from("EARNED"),
-          genericTokenAccount.publicKey.toBuffer(),
-          usdcMint.toBuffer(),
-        ],
-        program.programId
-      );
-
-    const [reservePDAGeneric, reserveBumpGeneric] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from("RESERVE"),
-        genericTokenAccount.publicKey.toBuffer(),
-        usdcMint.toBuffer(),
-      ],
-      program.programId
-    );
-
-    try {
-      await program.rpc.newToken(
-        "token",
-        new anchor.BN(1),
-        new anchor.BN(100),
-        new anchor.BN(100),
-        new anchor.BN(100),
-        new anchor.BN(100),
-        new anchor.BN(100),
-        {
-          accounts: {
-            tokenData: genericTokenAccount.publicKey,
-            tokenMint: tokenPDAGeneric,
-            earnedUsdcAccount: earnedPDAGeneric,
-            reserveUsdcAccount: reservePDAGeneric,
-            mint: usdcMint,
-            user: userWallet.publicKey,
-            systemProgram: SystemProgram.programId,
-            rent: SYSVAR_RENT_PUBKEY,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          },
-          signers: [genericTokenAccount],
-        }
-      );
-    } catch (error) {
-      console.log(error);
-    }
-
-    const genericAccount = await getOrCreateAssociatedTokenAccount(
-         connection,
-         await randomPayer(),
-         tokenPDAGeneric,
-         Wallet.publicKey
-    );
-
-    const check = await getAccount(connection, genericAccount.address);
-
-    console.log(check.mint.toString())
-
 
     const [tokenPDA, tokenBump] = await PublicKey.findProgramAddress(
       [Buffer.from("MINT"), newAccount.publicKey.toBuffer()],
@@ -576,12 +402,11 @@ describe("token3", () => {
       usdcMint, // USDC Token Mint
       usdcTokenAccount.address, // User USDC Token Account (destination)
       tokenAuthority, // Mint Authority (required as signer)
-      initialAmount*3
+      initialAmount
     );
 
     const token = await program.account.tokenData.fetch(newAccount.publicKey);
-    const genericToken = await program.account.tokenData.fetch(genericTokenAccount.publicKey);
-    console.log(genericToken.mint.toString())
+
     try {
       await program.rpc.mintToken(new anchor.BN(initialAmount), {
         accounts: {
@@ -602,35 +427,13 @@ describe("token3", () => {
     }
 
     try {
-      await program.rpc.mintToken(new anchor.BN(initialAmount), {
+      await program.rpc.redeemOneToken(new anchor.BN(initialAmount), {
         accounts: {
-          tokenData: genericTokenAccount.publicKey,
-          tokenMint: genericToken.mint,
-          reserveUsdcAccount: genericToken.reserve,
-          treasuryAccount: treasuryPDA,
-          userToken: genericAccount.address,
-          userUsdcToken: usdcTokenAccount.address,
-          user: Wallet.publicKey,
-          mint: usdcMint,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-        signers: [Wallet],
-      });
-    } catch (error) {
-      console.log(error);
-    }
-
-    try {
-      await program.rpc.redeemOneGenericToken(new anchor.BN(initialAmount/2), {
-        accounts: {
-          genericTokenData: genericTokenAccount.publicKey,
           tokenData: newAccount.publicKey,
-          genericTokenMint: genericToken.mint, 
           tokenMint: token.mint,
           userToken: TokenAccount.address,
-          userGenericToken: genericAccount.address,
           user: Wallet.publicKey,
-          genericReserveUsdcAccount: genericToken.reserve,
+          reserveUsdcAccount: token.reserve,
           earnedUsdcAccount: token.earned,
           treasuryAccount: treasuryPDA,
           mint: usdcMint,
@@ -642,38 +445,237 @@ describe("token3", () => {
       console.log(error);
     }
 
-    // const balance1 = await getMint(connection, tokenPDA);
+    const balance1 = await getMint(connection, tokenPDA);
 
-    // const balance2 = (await connection.getTokenAccountBalance(token.reserve))
-    //   .value.amount;
+    const balance2 = (await connection.getTokenAccountBalance(token.reserve))
+      .value.amount;
 
-    // const balance3 = (await connection.getTokenAccountBalance(treasuryPDA))
-    //   .value.amount;
+    const balance3 = (await connection.getTokenAccountBalance(treasuryPDA))
+      .value.amount;
 
     const balance4 = (
       await connection.getTokenAccountBalance(TokenAccount.address)
     ).value.amount;
 
-    const balance7 = (
-      await connection.getTokenAccountBalance(genericAccount.address)
+    const balance5 = (
+      await connection.getTokenAccountBalance(usdcTokenAccount.address)
     ).value.amount;
 
-    // const balance5 = (
-    //   await connection.getTokenAccountBalance(usdcTokenAccount.address)
-    // ).value.amount;
+    const balance6 = (await connection.getTokenAccountBalance(token.earned))
+      .value.amount;
 
-    // const balance6 = (await connection.getTokenAccountBalance(token.earned))
-    //   .value.amount;
-
-    // // console.log("Token Supply Balance:", balance2);
-    // console.log("Token Mint Supply:", Number(balance1.supply));
-    // console.log("reserve Balance:", balance2);
-    // console.log("treasury Balance:", balance3);
-    // console.log("earned Balance:", balance6);
+    // console.log("Token Supply Balance:", balance2);
+    console.log("Token Mint Supply:", Number(balance1.supply));
+    console.log("reserve Balance:", balance2);
+    console.log("treasury Balance:", balance3);
+    console.log("earned Balance:", balance6);
     console.log("userToken Balance:", balance4);
-    console.log("userGenericToken Balance:", balance7);
-    // console.log("userUSDC Balance:", balance5);
+    console.log("userUSDC Balance:", balance5);
   });
+
+  // it("Redeem Generic Token", async () => {
+  //   const Wallet = Keypair.generate();
+  //   const AirdropSignature = await connection.requestAirdrop(
+  //     Wallet.publicKey,
+  //     LAMPORTS_PER_SOL
+  //   );
+
+  //   await connection.confirmTransaction(AirdropSignature);
+
+  //   const genericTokenAccount = Keypair.generate();
+  //   console.log("TokenDataAccount:", genericTokenAccount.publicKey.toString());
+
+  //   const [tokenPDAGeneric, tokenBumpGeneric] =
+  //     await PublicKey.findProgramAddress(
+  //       [Buffer.from("MINT"), genericTokenAccount.publicKey.toBuffer()],
+  //       program.programId
+  //     );
+    
+  //   console.log(tokenPDAGeneric.toString())
+
+  //   const [earnedPDAGeneric, earnedBumpGeneric] =
+  //     await PublicKey.findProgramAddress(
+  //       [
+  //         Buffer.from("EARNED"),
+  //         genericTokenAccount.publicKey.toBuffer(),
+  //         usdcMint.toBuffer(),
+  //       ],
+  //       program.programId
+  //     );
+
+  //   const [reservePDAGeneric, reserveBumpGeneric] = await PublicKey.findProgramAddress(
+  //     [
+  //       Buffer.from("RESERVE"),
+  //       genericTokenAccount.publicKey.toBuffer(),
+  //       usdcMint.toBuffer(),
+  //     ],
+  //     program.programId
+  //   );
+
+  //   try {
+  //     await program.rpc.newToken(
+  //       "token",
+  //       new anchor.BN(1),
+  //       new anchor.BN(100),
+  //       new anchor.BN(100),
+  //       new anchor.BN(100),
+  //       new anchor.BN(100),
+  //       new anchor.BN(100),
+  //       {
+  //         accounts: {
+  //           tokenData: genericTokenAccount.publicKey,
+  //           tokenMint: tokenPDAGeneric,
+  //           earnedUsdcAccount: earnedPDAGeneric,
+  //           reserveUsdcAccount: reservePDAGeneric,
+  //           mint: usdcMint,
+  //           user: userWallet.publicKey,
+  //           systemProgram: SystemProgram.programId,
+  //           rent: SYSVAR_RENT_PUBKEY,
+  //           tokenProgram: TOKEN_PROGRAM_ID,
+  //         },
+  //         signers: [genericTokenAccount],
+  //       }
+  //     );
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+
+  //   const genericAccount = await getOrCreateAssociatedTokenAccount(
+  //        connection,
+  //        await randomPayer(),
+  //        tokenPDAGeneric,
+  //        Wallet.publicKey
+  //   );
+
+  //   const check = await getAccount(connection, genericAccount.address);
+
+  //   console.log(check.mint.toString())
+
+
+  //   const [tokenPDA, tokenBump] = await PublicKey.findProgramAddress(
+  //     [Buffer.from("MINT"), newAccount.publicKey.toBuffer()],
+  //     program.programId
+  //   );
+
+  //   // Get the token account of the fromWallet address, and if it does not exist, create it
+  //   const TokenAccount = await getOrCreateAssociatedTokenAccount(
+  //     connection,
+  //     await randomPayer(),
+  //     tokenPDA,
+  //     Wallet.publicKey
+  //   );
+
+  //   const usdcTokenAccount = await getOrCreateAssociatedTokenAccount(
+  //     connection,
+  //     await randomPayer(),
+  //     usdcMint,
+  //     Wallet.publicKey
+  //   );
+
+  //   await mintTo(
+  //     connection, // connection to Solana
+  //     await randomPayer(), // randomPayer as payer for test
+  //     usdcMint, // USDC Token Mint
+  //     usdcTokenAccount.address, // User USDC Token Account (destination)
+  //     tokenAuthority, // Mint Authority (required as signer)
+  //     initialAmount*3
+  //   );
+
+  //   const token = await program.account.tokenData.fetch(newAccount.publicKey);
+  //   const genericToken = await program.account.tokenData.fetch(genericTokenAccount.publicKey);
+  //   console.log(genericToken.mint.toString())
+  //   try {
+  //     await program.rpc.mintToken(new anchor.BN(initialAmount), {
+  //       accounts: {
+  //         tokenData: newAccount.publicKey,
+  //         tokenMint: token.mint,
+  //         reserveUsdcAccount: token.reserve,
+  //         treasuryAccount: treasuryPDA,
+  //         userToken: TokenAccount.address,
+  //         userUsdcToken: usdcTokenAccount.address,
+  //         user: Wallet.publicKey,
+  //         mint: usdcMint,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //       },
+  //       signers: [Wallet],
+  //     });
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+
+  //   try {
+  //     await program.rpc.mintToken(new anchor.BN(initialAmount), {
+  //       accounts: {
+  //         tokenData: genericTokenAccount.publicKey,
+  //         tokenMint: genericToken.mint,
+  //         reserveUsdcAccount: genericToken.reserve,
+  //         treasuryAccount: treasuryPDA,
+  //         userToken: genericAccount.address,
+  //         userUsdcToken: usdcTokenAccount.address,
+  //         user: Wallet.publicKey,
+  //         mint: usdcMint,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //       },
+  //       signers: [Wallet],
+  //     });
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+
+  //   try {
+  //     await program.rpc.redeemOneGenericToken(new anchor.BN(initialAmount/2), {
+  //       accounts: {
+  //         genericTokenData: genericTokenAccount.publicKey,
+  //         tokenData: newAccount.publicKey,
+  //         genericTokenMint: genericToken.mint, 
+  //         tokenMint: token.mint,
+  //         userToken: TokenAccount.address,
+  //         userGenericToken: genericAccount.address,
+  //         user: Wallet.publicKey,
+  //         genericReserveUsdcAccount: genericToken.reserve,
+  //         earnedUsdcAccount: token.earned,
+  //         treasuryAccount: treasuryPDA,
+  //         mint: usdcMint,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //       },
+  //       signers: [Wallet],
+  //     });
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+
+  //   // const balance1 = await getMint(connection, tokenPDA);
+
+  //   // const balance2 = (await connection.getTokenAccountBalance(token.reserve))
+  //   //   .value.amount;
+
+  //   // const balance3 = (await connection.getTokenAccountBalance(treasuryPDA))
+  //   //   .value.amount;
+
+  //   const balance4 = (
+  //     await connection.getTokenAccountBalance(TokenAccount.address)
+  //   ).value.amount;
+
+  //   const balance7 = (
+  //     await connection.getTokenAccountBalance(genericAccount.address)
+  //   ).value.amount;
+
+  //   // const balance5 = (
+  //   //   await connection.getTokenAccountBalance(usdcTokenAccount.address)
+  //   // ).value.amount;
+
+  //   // const balance6 = (await connection.getTokenAccountBalance(token.earned))
+  //   //   .value.amount;
+
+  //   // // console.log("Token Supply Balance:", balance2);
+  //   // console.log("Token Mint Supply:", Number(balance1.supply));
+  //   // console.log("reserve Balance:", balance2);
+  //   // console.log("treasury Balance:", balance3);
+  //   // console.log("earned Balance:", balance6);
+  //   console.log("userToken Balance:", balance4);
+  //   console.log("userGenericToken Balance:", balance7);
+  //   // console.log("userUSDC Balance:", balance5);
+  // });
 
   // it("Redeem Two Tokens ", async () => {
   //   const Wallet = Keypair.generate();
