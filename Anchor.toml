@@ -10,7 +10,7 @@ token3 = "G28ceN5471mPMKhSThZu4tvzK6Skbxrr8qy4abskVsYJ"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/home/johnliu/.config/solana/id.json"
 
 [scripts]

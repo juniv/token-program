@@ -210,6 +210,7 @@ pub mod token3 {
         let token_data = ctx.accounts.token_data.key();
         // let reward_amount = amount * ctx.accounts.token_data.reward_merchant_token / 10000;
         let reward_amount = (ctx.accounts.token_data.reward_merchant_token.checked_mul(amount).ok_or(ErrorCode::MATH)?).checked_div(10000).ok_or(ErrorCode::MATH)?;
+        
         let fee_amount = ctx.accounts.token_data.transaction_fee; 
         let usdc_value = (amount - reward_amount) * (ctx.accounts.reserve_usdc_account.amount) / (ctx.accounts.token_mint.supply);
         let earned_amount = usdc_value - fee_amount;
