@@ -19,6 +19,7 @@ pub mod token3 {
        Ok(())
     }
     
+    // TODO: change to create token using metaplex token standard
     // create new token_data account 
     // create new reward token mint
     // create reserve and earned USDC acounts for new reward token
@@ -660,7 +661,6 @@ pub struct InitTreasury<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(name: String)]
 pub struct NewToken<'info> {
     #[account(
         init,
